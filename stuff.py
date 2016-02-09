@@ -2,9 +2,6 @@
 
 # each vertex knows the vertex it is connected to
 class Vertex:
-	name = ""
-	#connections = []
-	
 	def __init__(self, vertex):
 		self.name = vertex
 		
@@ -19,6 +16,19 @@ class Vertex:
 	def toString(self):
 		return self.name + ": " + str(self.connections)
 
+class Face:
+	def __init__(self, face_name):
+		self.name = face_name
+		self.vertices = []
+	
+	def insertVertex(self, vertex):
+		if vertex:
+			self.vertices.append(vertex)
+		print(self.vertices)
+	
+	def toString(self):
+		return self.name + ": " + str(self.vertices)
+
 x = Vertex("F")
 x.insertVertex("G")
 x.insertVertex("H")
@@ -29,3 +39,5 @@ y.insertVertex("R")
 y.insertVertex("S")
 print(x.toString())
 print(y.toString())
+
+import tkinter as tk
