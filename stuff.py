@@ -1,3 +1,6 @@
+import sys
+from tkinter import *
+
 #need a bunch of classes to represent the polyhedron
 
 # each vertex knows the vertex it is connected to
@@ -29,15 +32,18 @@ class Face:
 	def toString(self):
 		return self.name + ": " + str(self.vertices)
 
-x = Vertex("F")
-x.insertVertex("G")
-x.insertVertex("H")
-print(x.toString())
+# x = Vertex("F")
+# x.insertVertex("G")
+# x.insertVertex("H")
+# print(x.toString())
 
-y = Vertex("Q")
-y.insertVertex("R")
-y.insertVertex("S")
-print(x.toString())
-print(y.toString())
+# y = Vertex("Q")
+# y.insertVertex("R")
+# y.insertVertex("S")
+# print(x.toString())
+# print(y.toString())
 
-import tkinter as tk
+g = Tk()
+g.geometry('1280x720+0+0')
+g.title("Polyhedron")
+g.mainloop() # needed for windows, doesn't work for linux

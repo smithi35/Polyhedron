@@ -471,14 +471,51 @@ def list_contains(sub, full):
 
 	return contains
 	
-def draw_tet():
+def draw_tet(view):
+	col = 'black'
+	coordinates = []
+	for each in vertices:
+		coordinates.append(each.get_coordinates())
+	
+	coordinates = convert_to_four_dimensions(coordinates)
+	c.delete(ALL)
+	count_vertices = len(coordinates[0])
+	width = c.winfo_width()+1
+	height = c.winfo_height()+1
+	print("Width = " + str(width) + "\nHeight = " + str(height))
+
 	for face in faces:
+		print("face = " + str(face))
+		face_coordinates = []
 		for vertex in face:
-			# do something
-		col = 0
-		c.create_polygon(coords, fill=col)
+			index = vertex-1 # get index for vertex
+			translate(coordinates[0][index], coordinates[1][index], width, height, face_coordinates)
+		print("face = " + str(face_coordinates))
+		c.create_polygon(face_coordinates, fill=col)
+
+def convert_to_four_dimensions(coordinates):
+	m = len(coordinates[0])
+	n = len(coordinates)
 	
-	
+	out = create_Zero_Matrix(m, n)
+
+	for i in range(m):
+		for j in range(n):
+			out[i][j] = coordinates[j][i]
+		print(out[i])
+	return out
+
+def create_Zero_Matrix(m, n):
+	out = [0] * m
+
+	for i in range(m):
+		out[i] = [0] * n
+	return out
+
+def translate(x, y, width, height, array):
+	array.append(x+width)
+	array.append(y+height)
+
 if len(sys.argv) > 1:
 	top = Tk()
 	c = Canvas(top, bg="white", height=900, width=1000)
@@ -494,7 +531,7 @@ if len(sys.argv) > 1:
 	get_faces()
 	
 	# next, get pixel coordinates for the faces
-	draw_tet()
+	draw_tet([-100, 0, 0])
 	top.mainloop()
 # first = [1, 2, 3, 4]
 # second = [3, 4, 1, 2]
