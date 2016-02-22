@@ -476,13 +476,14 @@ def draw_tet(view):
 	coordinates = []
 	for each in vertices:
 		coordinates.append(each.get_coordinates())
-	
+	# print("Coordinates = " + str(coordinates))
+
 	coordinates = convert_to_four_dimensions(coordinates)
 	c.delete(ALL)
 	count_vertices = len(coordinates[0])
 	width = c.winfo_width()+1
 	height = c.winfo_height()+1
-	print("Width = " + str(width) + "\nHeight = " + str(height))
+	# print("Width = " + str(width) + "\nHeight = " + str(height))
 
 	for face in faces:
 		print("face = " + str(face))
@@ -490,19 +491,20 @@ def draw_tet(view):
 		for vertex in face:
 			index = vertex-1 # get index for vertex
 			translate(coordinates[0][index], coordinates[1][index], width, height, face_coordinates)
-		print("face = " + str(face_coordinates))
-		c.create_polygon(face_coordinates, fill=col)
+		# print("face = " + str(face_coordinates))
+		c.create_polygon(face_coordinates, fill=col, outline = 'black')
 
 def convert_to_four_dimensions(coordinates):
-	m = len(coordinates[0])
+	m = len(coordinates[0])+1
 	n = len(coordinates)
 	
 	out = create_Zero_Matrix(m, n)
 
-	for i in range(m):
+	for i in range(m-1):
 		for j in range(n):
 			out[i][j] = coordinates[j][i]
-		print(out[i])
+	out[m-1] = [1] * n
+
 	return out
 
 def create_Zero_Matrix(m, n):
@@ -510,6 +512,7 @@ def create_Zero_Matrix(m, n):
 
 	for i in range(m):
 		out[i] = [0] * n
+
 	return out
 
 def translate(x, y, width, height, array):
@@ -518,7 +521,7 @@ def translate(x, y, width, height, array):
 
 if len(sys.argv) > 1:
 	top = Tk()
-	c = Canvas(top, bg="white", height=900, width=1000)
+	c = Canvas(top, bg="white", height=600, width=1000)
 	c.pack(fill=BOTH, expand=YES)
 	vertices = [[]]
 	coordinates = [[]]
