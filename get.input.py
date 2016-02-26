@@ -2,6 +2,7 @@ import fileinput
 import sys
 from tkinter import *
 from random import randint
+import math
 
 # to be used with a priority queue
 class Node:
@@ -159,24 +160,12 @@ class Face:
 		self.vertices = []
 		for i in range(len(vertex_list)):
 			self.vertices.append(vertices[vertex_list[i]-1].copy())
+			print(vertices[vertex_list[i]-1].toString())
 
 		self.setCentre()
 		self.setLight()
 		self.setOrthogonalVector()
 		self.setIntensity()
-	
-	def setOrthogonalVector(self):
-		# set vectors for face
-		first = self.vertices[1].get_coordinates()
-		second = self.vertices[2].get_coordinates()
-		
-		pq = []
-		pr = []
-		for i in range(0, 3):
-			pq.append(self.centre[i] - first[i])
-			pr.append(self.centre[i] - second[i])
-		# determine orthogonal vector for face
-		self.unitvector = crossProduct(pq, pr)
 	
 	def setCentre(self):
 		self.centre = []
@@ -195,6 +184,9 @@ class Face:
 			self.centre.append(total / length)
 			index = index + 1
 
+		print("centre = " + str(self.centre))
+		# get the distance from the light source/viewer to the centre
+
 	# assume that the light source is far to the negative side of the x-axis
 	# and get the vector of the light source from self.centre
 	def setLight(self):
@@ -203,9 +195,42 @@ class Face:
 		for i in range(len(vp)):
 			self.light.append(vp[i]-self.centre[i])
 		
+		self.lightdistance = pointDistance(vp, self.centre)
+		print("distance = " + str(self.lightdistance))
+
+	def setOrthogonalVector(self):
+		# set vectors for face
+		first = self.vertices[0].get_coordinates()
+		second = self.vertices[1].get_coordinates()
+		
+		pq = []
+		pr = []
+		for i in range(0, 3):
+			pq.append(self.centre[i] - first[i])
+			pr.append(self.centre[i] - second[i])
+		print("pq = " + str(pq))
+		print("pr = " + str(pr))
+		# determine orthogonal vector for face
+		self.unitvector = crossProduct(pq, pr)
+		print("vector = " + str(self.unitvector))
+		
+		# now divide the unit vector by the distance from the light source/viewer to the centre
+		for i in range(len(self.unitvector)):
+			self.unitvector[i] = float(self.unitvector[i] / self.lightdistance)
+
+		print("vector = " + str(self.unitvector))
 	def setIntensity(self):
 		# set intensity to the dot product of vp and uv
 		self.intensity = dot(self.unitvector, self.light)
+		print("I = " + str(self.intensity) + "\n\n")
+	
+	def get_coordinates(self):
+		array = []
+		
+		for v in self.vertices:
+			array.append(v.get_coordinates)
+		
+		return array
 	
 	def getUnitVector(self):
 		return self.unitvector
@@ -226,6 +251,12 @@ def crossProduct(pq, pr):
 
 def dot(first, second):
 	return ((first[0]*second[0]) + (first[1]*second[1]) + (first[2]*second[2]))
+	
+def pointDistance(first, second):
+	x = second[0]-first[0]
+	y = second[1]-first[1]
+	z = second[2]-first[2]
+	return math.sqrt(x*x + y*y + z*z)
 
 def get_input(filename):
 	input = open(sys.argv[1], "r")
@@ -408,10 +439,9 @@ def get_faces():
 		if item in faces:
 			faces.remove(item)
 
-	for face in faces:
-		face = Face(face)
-		
-	print(faces)
+	for i in range(len(faces)):
+		faces[i] = Face(faces[i])
+
 	print(len(faces))
 
 # starting with vertex attempt to create one or more new faces
@@ -546,16 +576,38 @@ def list_contains(sub, full):
 			contains = 0
 
 	return contains
+
+# draw the faces with a positive intensity value	
+def draw_tet():
+	c.delete(ALL)
+	draw = []
 	
-def draw_tet(view):
-	col = 'white'
+	for face in faces:
+		if face.getIntensity() > 0:
+			draw.append(face)
+	
+	print("Drawing " + str(len(draw)) + " faces.")
+	
+	# go through the vertices for the visible faces and project them to the visual plane using pixel coordinates
+	for face in draw:
+		coords = face.get_coordinates()
+		
+		# get projected pixel coordinates
+		proj(coords)
+		
+		color = "#"
+		for i in range(len(col)):
+			color = color + str((col[i] * face.getIntensity()))
+		
+		c.create_polygon(coords, fill=col, outline='black')
+
 	coordinates = []
 	for each in vertices:
 		coordinates.append(each.get_coordinates())
 	# print("Coordinates = " + str(coordinates))
 
 	coordinates = convert_to_four_dimensions(coordinates)
-	c.delete(ALL)
+	
 	count_vertices = len(coordinates[0])
 	width = c.winfo_width()+1
 	height = c.winfo_height()+1
@@ -569,6 +621,10 @@ def draw_tet(view):
 			translate(coordinates[0][index], coordinates[1][index], width, height, face_coordinates)
 		print("face = " + str(face_coordinates))
 		c.create_polygon(face_coordinates, fill=col, outline='black')
+
+# take the coordinates of the face and return the pixel coordinates for the face on the visual plane in the same array
+def proj(coords):
+	print("L")
 
 def convert_to_four_dimensions(coordinates):
 	m = len(coordinates[0])+1
@@ -604,6 +660,8 @@ if len(sys.argv) > 1:
 	
 	# the viewer is initially located at [-100, 0, 0]
 	vp = [-100, 0, 0]
+	col = [20, 0, 199]
+
 	vertices = [[]]
 	coordinates = [[]]
 	edges = []
