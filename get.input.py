@@ -154,6 +154,79 @@ class Vertex_List:
 	def get_vertices_number(self):
 		return len(self.vertices)
 
+class Face:
+	def __init__(self, vertex_list):
+		self.vertices = []
+		for i in range(len(vertex_list)):
+			self.vertices.append(vertices[vertex_list[i]-1].copy())
+
+		self.setCentre()
+		self.setLight()
+		self.setOrthogonalVector()
+		self.setIntensity()
+	
+	def setOrthogonalVector(self):
+		# set vectors for face
+		first = self.vertices[1].get_coordinates()
+		second = self.vertices[2].get_coordinates()
+		
+		pq = []
+		pr = []
+		for i in range(0, 3):
+			pq.append(self.centre[i] - first[i])
+			pr.append(self.centre[i] - second[i])
+		# determine orthogonal vector for face
+		self.unitvector = crossProduct(pq, pr)
+	
+	def setCentre(self):
+		self.centre = []
+		
+		# add vertex coordinates to list
+		coords = []
+		for vertex in self.vertices:
+			coords.append(vertex.get_coordinates())
+
+		index = 0;
+		length = len(coords)
+		while index < len(coords[0]):
+			total = 0
+			for vertex in coords:
+				total = total + vertex[index]
+			self.centre.append(total / length)
+			index = index + 1
+
+	# assume that the light source is far to the negative side of the x-axis
+	# and get the vector of the light source from self.centre
+	def setLight(self):
+		self.light = []
+		
+		for i in range(len(vp)):
+			self.light.append(vp[i]-self.centre[i])
+		
+	def setIntensity(self):
+		# set intensity to the dot product of vp and uv
+		self.intensity = dot(self.unitvector, self.light)
+	
+	def getUnitVector(self):
+		return self.unitvector
+	
+	def getCentre(self):
+		return self.centre
+	
+	def getLight(self):
+		return self.light
+	
+	def getIntensity(self):
+		return self.intensity
+
+def crossProduct(pq, pr):
+	return [(pq[0]*pr[1]-pq[1]*pr[0]), 
+		(-1 * (pq[0]*pr[2]-pq[2]*pr[0])), 
+		(pq[1]*pr[2]-pq[2]*pr[1])]
+
+def dot(first, second):
+	return ((first[0]*second[0]) + (first[1]*second[1]) + (first[2]*second[2]))
+
 def get_input(filename):
 	input = open(sys.argv[1], "r")
 	i = 0
@@ -335,6 +408,9 @@ def get_faces():
 		if item in faces:
 			faces.remove(item)
 
+	for face in faces:
+		face = Face(face)
+		
 	print(faces)
 	print(len(faces))
 
@@ -525,6 +601,9 @@ if len(sys.argv) > 1:
 	top = Tk()
 	c = Canvas(top, bg="white", height=600, width=1000)
 	c.pack(fill=BOTH, expand=YES)
+	
+	# the viewer is initially located at [-100, 0, 0]
+	vp = [-100, 0, 0]
 	vertices = [[]]
 	coordinates = [[]]
 	edges = []
@@ -536,7 +615,7 @@ if len(sys.argv) > 1:
 	get_faces()
 	
 	# next, get pixel coordinates for the faces
-	draw_tet([-100, 0, 0])
+	draw_tet()
 	top.mainloop()
 # first = [1, 2, 3, 4]
 # second = [3, 4, 1, 2]
