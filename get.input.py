@@ -472,7 +472,7 @@ def list_contains(sub, full):
 	return contains
 	
 def draw_tet(view):
-	col = 'black'
+	col = 'white'
 	coordinates = []
 	for each in vertices:
 		coordinates.append(each.get_coordinates())
@@ -491,7 +491,7 @@ def draw_tet(view):
 			index = vertex-1 # get index for vertex
 			translate(coordinates[0][index], coordinates[1][index], width, height, face_coordinates)
 		print("face = " + str(face_coordinates))
-		c.create_polygon(face_coordinates, fill=col)
+		c.create_polygon(face_coordinates, fill=col, outline='black')
 
 def convert_to_four_dimensions(coordinates):
 	m = len(coordinates[0])
@@ -512,9 +512,11 @@ def create_Zero_Matrix(m, n):
 		out[i] = [0] * n
 	return out
 
+# doesn't account for z axis at all yet
 def translate(x, y, width, height, array):
-	array.append(x+width)
-	array.append(y+height)
+	scale = 150
+	array.append(scale*(x+width))
+	array.append(scale*(y+height))
 
 if len(sys.argv) > 1:
 	top = Tk()
