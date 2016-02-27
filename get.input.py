@@ -162,11 +162,60 @@ class Face:
 			self.vertices.append(vertices[vertex_list[i]-1].copy())
 			print(vertices[vertex_list[i]-1].toString())
 
+		self.orderVertices()
 		self.setCentre()
 		self.setLight()
 		self.setOrthogonalVector()
 		self.setIntensity()
 	
+	# ensure that the vertices are in the proper order
+	def orderVertices(self):
+		# if there are less than 4 vertices don't bother
+		if len(self.vertices) > 3:
+			length = len(self.vertices)
+			copy = []
+			
+			for i in range(len(self.vertices)):
+				copy.append(self.vertices[i].copy())
+			
+			# determine whether the vertices are in the right order by ensuring there is an edge between vertices adjacent in self.vertices
+			connected = 1
+			
+			for i in range(len(self.vertices)):
+				first = self.vertices[i-1].get_name()
+				second = self.vertices[i].get_name()
+				target = [first, second]
+				reverse = [second, first]
+				found = 0
+				
+				for e in edges:
+					if (e == target) or (e == reverse):
+						found = 1
+						
+				if not found:
+					connected = 0
+					break
+					
+			self.vertices = [copy[0]]
+			copy.pop(0)
+			
+			# go through copy and insert connected vertices into self.vertices
+			while copy:
+				# curr is the last item in self.vertices
+				curr = self.vertices[-1] 
+				
+				insert = 0
+				# go through copy and find a vertex that curr is connected to 
+				for i in range(len(copy)):
+					if int(copy[i].get_name()) in curr.get_connections():
+						self.vertices.append(copy[i])
+						insert = 1
+						copy.pop(i)
+						break
+			
+			if len(self.vertices) != length:
+				exit("Fucked up and have the wrong number of vertices")
+							
 	def setCentre(self):
 		self.centre = []
 		
@@ -195,6 +244,7 @@ class Face:
 		for i in range(len(vp)):
 			self.light.append(vp[i]-self.centre[i])
 		
+		print("Light vector = " + str(self.light))
 		self.lightdistance = pointDistance(vp, self.centre)
 		print("distance = " + str(self.lightdistance))
 
@@ -202,12 +252,13 @@ class Face:
 		# set vectors for face
 		first = self.vertices[0].get_coordinates()
 		second = self.vertices[1].get_coordinates()
+		third = self.vertices[2].get_coordinates()
 		
 		pq = []
 		pr = []
 		for i in range(0, 3):
-			pq.append(self.centre[i] - first[i])
-			pr.append(self.centre[i] - second[i])
+			pq.append(first[i] - second[i])
+			pr.append(first[i] - third[i])
 		print("pq = " + str(pq))
 		print("pr = " + str(pr))
 		# determine orthogonal vector for face
@@ -219,6 +270,7 @@ class Face:
 			self.unitvector[i] = float(self.unitvector[i] / self.lightdistance)
 
 		print("vector = " + str(self.unitvector))
+
 	def setIntensity(self):
 		# set intensity to the dot product of vp and uv
 		self.intensity = dot(self.unitvector, self.light)
@@ -228,7 +280,7 @@ class Face:
 		array = []
 		
 		for v in self.vertices:
-			array.append(v.get_coordinates)
+			array.append(v.get_coordinates())
 		
 		return array
 	
@@ -243,14 +295,28 @@ class Face:
 	
 	def getIntensity(self):
 		return self.intensity
+	
+	def getDistance(self):
+		return self.lightdistance
 
+# returns the cross product of two 3-dimensional vectors
 def crossProduct(pq, pr):
-	return [(pq[0]*pr[1]-pq[1]*pr[0]), 
-		(-1 * (pq[0]*pr[2]-pq[2]*pr[0])), 
-		(pq[1]*pr[2]-pq[2]*pr[1])]
+	return [((pq[1]*pr[2]) - (pq[2]*pr[1])),
+	(-1 * (pq[0]*pr[2]) - (pq[2]*pq[0])),
+	((pq[0]*pr[1]) - (pq[1]*pr[0]))]
+	# return [(pq[0]*pr[1]-pq[1]*pr[0]), 
+		# (-1 * (pq[0]*pr[2]-pq[2]*pr[0])), 
+		# (pq[1]*pr[2]-pq[2]*pr[1])]
 
 def dot(first, second):
-	return ((first[0]*second[0]) + (first[1]*second[1]) + (first[2]*second[2]))
+	tally = 0
+
+	if len(first) == len(second):
+		for i in range(len(first)):
+			tally = tally + (first[i] * second[i])
+	else:
+		exit("Cannot compute dot product of different sized arrays")
+	return tally
 	
 def pointDistance(first, second):
 	x = second[0]-first[0]
@@ -422,7 +488,7 @@ def get_faces():
 			
 	length = []
 	total = 0;
-	# get the average face length, remove any face that is unusualllong
+	# get the average face length, remove any face that is unusually long
 	for face in faces:
 		total = total + len(face)
 	
@@ -439,6 +505,7 @@ def get_faces():
 		if item in faces:
 			faces.remove(item)
 
+	print("Faces = " + str(faces) + ", there are " + str(len(faces)) + " of them")
 	for i in range(len(faces)):
 		faces[i] = Face(faces[i])
 
@@ -586,45 +653,111 @@ def draw_tet():
 		if face.getIntensity() > 0:
 			draw.append(face)
 	
+	# sort started with the most distant face
+	print("Drawing " + str(len(draw)) + " faces")
+	draw = sort_faces(draw)
+	
 	print("Drawing " + str(len(draw)) + " faces.")
 	
 	# go through the vertices for the visible faces and project them to the visual plane using pixel coordinates
 	for face in draw:
 		coords = face.get_coordinates()
+		print("I = " + str(face.getIntensity()))
 		
 		# get projected pixel coordinates
-		proj(coords)
+		projected = proj(coords)
 		
 		color = "#"
 		for i in range(len(col)):
-			color = color + str((col[i] * face.getIntensity()))
+			intensity = int(col[i] * face.getIntensity())
+			intense_string = "{0:03X}".format(intensity)
+			print(intense_string)
+			color = color + intense_string
+		print("col = " + str(color))
 		
-		c.create_polygon(coords, fill=col, outline='black')
+		c.create_polygon(projected, fill=color, outline='black')
 
-	coordinates = []
-	for each in vertices:
-		coordinates.append(each.get_coordinates())
-	# print("Coordinates = " + str(coordinates))
+	# coordinates = []
+	# for each in vertices:
+		# coordinates.append(each.get_coordinates())
 
-	coordinates = convert_to_four_dimensions(coordinates)
+	# coordinates = convert_to_four_dimensions(coordinates)
 	
-	count_vertices = len(coordinates[0])
-	width = c.winfo_width()+1
-	height = c.winfo_height()+1
-	# print("Width = " + str(width) + "\nHeight = " + str(height))
+	# count_vertices = len(coordinates[0])
+	# width = c.winfo_width()+1
+	# height = c.winfo_height()+1
 
-	for face in faces:
-		print("face = " + str(face))
-		face_coordinates = []
-		for vertex in face:
-			index = vertex-1 # get index for vertex
-			translate(coordinates[0][index], coordinates[1][index], width, height, face_coordinates)
-		print("face = " + str(face_coordinates))
-		c.create_polygon(face_coordinates, fill=col, outline='black')
+	# for face in faces:
+		# print("face = " + str(face))
+		# face_coordinates = []
+		# for vertex in face:
+			# index = vertex-1 # get index for vertex
+			# translate(coordinates[0][index], coordinates[1][index], width, height, face_coordinates)
+		# print("face = " + str(face_coordinates))
+		# c.create_polygon(face_coordinates, fill=col, outline='black')
+
+# insertion sort because it is simple and there won't be many faces to sort
+def sort_faces(face_list):
+	out = []
+	
+	# for each iteration of the loop find the most distant and insert to the end of out
+	while face_list:
+		distant = 0
+		most_distant_item = face_list[0]
+		index = 0
+		
+		for i in range(len(face_list)):
+			if face_list[i].getDistance() > distant:
+				index = i
+				distant = face_list[i].getDistance()
+				most_diatant_item = face_list[i]
+		
+		out.append(most_distant_item)
+		face_list.pop(index)
+
+	return out
 
 # take the coordinates of the face and return the pixel coordinates for the face on the visual plane in the same array
 def proj(coords):
-	print("L")
+	out = []
+	for i in range(len(coords)):
+		v = [vp[0], vp[1], vp[2], 1]
+		# get coordinates of each vertex and project
+		# vp is the viewpoint and is predefined, as is the plane, plane
+		P = []
+		for item in coords[i]:
+			P.append(item)
+		P.append(1)
+		print("P = " + str(P))
+
+		psigma = dot(P,plane)
+		vsigma = dot(v,plane)
+		quotient = psigma/vsigma
+
+		for i in range(len(v)):
+			v[i] = v[i] * quotient
+		print("v = " + str(v))
+		projection = []
+		for i in range(len(v)):
+			projection.append((P[i] - v[i]))
+		
+		if projection[3] != 1:
+			for i in range(len(projection)):
+				projection[i] = projection[i] / projection[3]
+		
+		print("projection = " + str(projection))
+		# get pixel coordinates by shifting up and to the right, and multiply by a scalar to increase the size of the shape
+		
+		# print("projection[1] = " + str(projection[0]))
+		# print("projection[2] = " + str(projection[1]))
+		
+		array = []
+		array.append((projection[2] * 100) + 640)
+		array.append((projection[1] * 100) + 360)
+		print("Array = " + str(array))
+		out.append(array)
+ 
+	return out
 
 def convert_to_four_dimensions(coordinates):
 	m = len(coordinates[0])+1
@@ -655,12 +788,14 @@ def translate(x, y, width, height, array):
 
 if len(sys.argv) > 1:
 	top = Tk()
-	c = Canvas(top, bg="white", height=600, width=1000)
+	c = Canvas(top, bg="white", height=720, width=1280)
 	c.pack(fill=BOTH, expand=YES)
 	
 	# the viewer is initially located at [-100, 0, 0]
-	vp = [-100, 0, 0]
-	col = [20, 0, 199]
+	vp = [-10,0,0]
+	col = [135,972,125]
+	plane = [1,0,0,-1]
+	nplane = [-300,0,0]
 
 	vertices = [[]]
 	coordinates = [[]]
