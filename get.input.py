@@ -264,11 +264,15 @@ class Face:
 		for i in range(0, 3):
 			pq.append(first[i] - second[i])
 			pr.append(first[i] - third[i])
-		print("pq = " + str(pq))
-		print("pr = " + str(pr))
+
 		# determine orthogonal vector for face
 		self.unitvector = crossProduct(pq, pr)
-		print("vector = " + str(self.unitvector))		
+		# print("vector = " + str(self.unitvector))	
+
+		# now divide the unit vector by the distance from the light source/viewer to the centre
+		for i in range(len(self.unitvector)):
+			self.unitvector[i] = float(self.unitvector[i] / self.lightdistance)
+		print("vector = " + str(self.unitvector))
 
 		if points_at_origin(self.unitvector, first):
 			print("multiplying unit vector by -1")
@@ -278,13 +282,7 @@ class Face:
 				opposite.append((-1 * self.unitvector[i]))
 			
 			self.unitvector = opposite
-
-		# now divide the unit vector by the distance from the light source/viewer to the centre
-		for i in range(len(self.unitvector)):
-			self.unitvector[i] = float(self.unitvector[i] / self.lightdistance)
-		print("vector = " + str(self.unitvector))
-
-		print("vector = " + str(self.unitvector))
+			print("vector = " + str(self.unitvector))
 
 	def setIntensity(self):
 		# set intensity to the dot product of vp and uv
@@ -357,11 +355,19 @@ def pointDistance(first, second):
 def points_at_origin(vector, point):
 	# assume that the vector doesn't point to the origin
 	origin = 0
-
-	# apply the vector to the point and see if it is closer to the origin
-	next_point = [point[0] + vector[0], point[1] + vector[1], point[2] + vector[2]]
 	
+	small_vector = []
+	for i in range(len(vector)):
+		small_vector.append((vector[i] / 10))
+	
+	# the vector has to be very small
 	print("point = " + str(point))
+	
+	# apply the vector to the point and see if it is closer to the origin
+	next_point = [point[0] + small_vector[0], 
+		point[1] + small_vector[1], 
+		point[2] + small_vector[2]]
+		
 	print("next_point = " + str(next_point))
 	
 	# determine distances from origin
@@ -413,8 +419,8 @@ def get_input(filename):
 			coordinates.append(coords)
 		i=i+1
 	
-	print("Vertices = " + str(vertices))
-	print("Coordinates = " + str(coordinates))
+	# print("Vertices = " + str(vertices))
+	# print("Coordinates = " + str(coordinates))
 
 def get_edges():
 	i = 0
@@ -426,7 +432,7 @@ def get_edges():
 				if not duplicate_present(edge):
 					edges.append(edge)
 		i = i+1
-	print("Edges = " + str(edges))
+	# print("Edges = " + str(edges))
 	
 def duplicate_present(edge):
 	reverse = reverse_list(edge)
@@ -705,7 +711,7 @@ def draw_tet():
 		faces[i] = Face(faces[i])
 	
 	for face in faces:
-		if face.getIntensity() > 0:
+		if face.getIntensity() > -0.1:
 			draw.append(face)
 	
 	# sort started with the most distant face
@@ -716,7 +722,7 @@ def draw_tet():
 	
 	# go through the vertices for the visible faces and project them to the visual plane using pixel coordinates
 	for face in draw:
-		print("Drawing face: " + str(face.getVerteces()))
+		print("\nDrawing face: " + str(face.getVerteces()))
 		coords = face.get_coordinates()
 		print("I = " + str(face.getIntensity()))
 		
@@ -731,9 +737,9 @@ def draw_tet():
 			else :
 				intense_string = str(col[i])
 			
-			print(intense_string)
+			# print(intense_string)
 			color = color + intense_string
-		print("col = " + str(color))
+		# print("col = " + str(color))
 		
 		c.create_polygon(projected, fill=color, outline='black')
 
@@ -791,7 +797,7 @@ def proj(coords):
 		for item in coords[i]:
 			P.append(item)
 		P.append(1)
-		print("P = " + str(P))
+		# print("P = " + str(P))
 
 		psigma = dot(P,plane)
 		vsigma = dot(v,plane)
@@ -799,7 +805,7 @@ def proj(coords):
 
 		for i in range(len(v)):
 			v[i] = v[i] * quotient
-		print("v = " + str(v))
+		# print("v = " + str(v))
 		projection = []
 		for i in range(len(v)):
 			projection.append((P[i] - v[i]))
@@ -808,7 +814,7 @@ def proj(coords):
 			for i in range(len(projection)):
 				projection[i] = projection[i] / projection[3]
 		
-		print("projection = " + str(projection))
+		# print("projection = " + str(projection))
 		# get pixel coordinates by shifting up and to the right, and multiply by a scalar to increase the size of the shape
 		
 		# print("projection[1] = " + str(projection[0]))
