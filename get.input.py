@@ -265,6 +265,14 @@ class Face:
 		self.unitvector = crossProduct(pq, pr)
 		print("vector = " + str(self.unitvector))
 		
+		# needs to be pointing away from the tetrahedron and the origin
+		opposite = []
+		for i in range(len(self.unitvector)):
+			opposite.append((-1 * self.unitvector[i]))
+			
+		# determine which makes more sense as the unit vector
+		
+		
 		# now divide the unit vector by the distance from the light source/viewer to the centre
 		for i in range(len(self.unitvector)):
 			self.unitvector[i] = float(self.unitvector[i] / self.lightdistance)
@@ -273,6 +281,7 @@ class Face:
 
 	def setIntensity(self):
 		# set intensity to the dot product of vp and uv
+		print("light vector = " + str(self.light))
 		self.intensity = dot(self.unitvector, self.light)
 		print("I = " + str(self.intensity) + "\n\n")
 	
@@ -785,11 +794,27 @@ def translate(x, y, width, height, array):
 	scale = 150
 	array.append(scale*(x+width))
 	array.append(scale*(y+height))
+	
+def wheel(event):
+	print("Wheel activated")
+	
+def resize(event):
+	print("Resizing window")
+	
+def click(event):
+	print("Click")
+	
+def mouse_motion(event):
+	print("Click and move")
 
 if len(sys.argv) > 1:
 	top = Tk()
 	c = Canvas(top, bg="white", height=720, width=1280)
 	c.pack(fill=BOTH, expand=YES)
+	c.bind_all('<MouseWheel>', wheel)
+	c.bind("<Configure>", resize)
+	c.bind("<Button-1>", click)
+	c.bind("<B1-Motion>", mouse_motion)
 	
 	# the viewer is initially located at [-100, 0, 0]
 	vp = [-10,0,0]
