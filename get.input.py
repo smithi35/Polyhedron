@@ -263,19 +263,21 @@ class Face:
 		print("pr = " + str(pr))
 		# determine orthogonal vector for face
 		self.unitvector = crossProduct(pq, pr)
-		print("vector = " + str(self.unitvector))
-		
-		# needs to be pointing away from the tetrahedron and the origin
-		opposite = []
-		for i in range(len(self.unitvector)):
-			opposite.append((-1 * self.unitvector[i]))
-			
-		# determine which makes more sense as the unit vector
-		
-		
+		print("vector = " + str(self.unitvector))		
+
 		# now divide the unit vector by the distance from the light source/viewer to the centre
 		for i in range(len(self.unitvector)):
 			self.unitvector[i] = float(self.unitvector[i] / self.lightdistance)
+		print("vector = " + str(self.unitvector))
+
+		if points_at_origin(self.unitvector, first):
+			print("multiplying unit vector by -1")
+			# needs to be pointing away from the tetrahedron and the origin
+			opposite = []
+			for i in range(len(self.unitvector)):
+				opposite.append((-1 * self.unitvector[i]))
+			
+			self.unitvector = opposite
 
 		print("vector = " + str(self.unitvector))
 
@@ -307,16 +309,28 @@ class Face:
 	
 	def getDistance(self):
 		return self.lightdistance
+	
+	# returns the string representation of the vertices
+	def getVerteces(self):
+		out = []
+		
+		for i in range(len(self.vertices)):
+			out.append(self.vertices[i].get_name())
+	
+		return out
 
 # returns the cross product of two 3-dimensional vectors
 def crossProduct(pq, pr):
-	return [((pq[1]*pr[2]) - (pq[2]*pr[1])),
-	(-1 * (pq[0]*pr[2]) - (pq[2]*pq[0])),
-	((pq[0]*pr[1]) - (pq[1]*pr[0]))]
-	# return [(pq[0]*pr[1]-pq[1]*pr[0]), 
-		# (-1 * (pq[0]*pr[2]-pq[2]*pr[0])), 
-		# (pq[1]*pr[2]-pq[2]*pr[1])]
-
+	out = None
+	
+	if (len(pr) == 3) and (len(pq) == 3):
+		out = []
+		out.append(((pq[1]*pr[2]) - (pq[2]*pr[1])))
+		out.append((-1 * (pq[0]*pr[2]) - (pq[2]*pq[0])))
+		out.append(((pq[0]*pr[1]) - (pq[1]*pr[0])))
+	return out
+		
+# get the scalar dot product of the two vectors
 def dot(first, second):
 	tally = 0
 
@@ -326,12 +340,46 @@ def dot(first, second):
 	else:
 		exit("Cannot compute dot product of different sized arrays")
 	return tally
-	
+
+# get the distance between the two three-dimensional points
 def pointDistance(first, second):
 	x = second[0]-first[0]
 	y = second[1]-first[1]
 	z = second[2]-first[2]
 	return math.sqrt(x*x + y*y + z*z)
+
+# returns 0 if vector does not point in the direction of the origin
+def points_at_origin(vector, point):
+	# assume that the vector doesn't point to the origin
+	origin = 0
+
+	# apply the vector to the point and see if it is closer to the origin
+	next_point = [point[0] + vector[0], point[1] + vector[1], point[2] + vector[2]]
+	
+	print("point = " + str(point))
+	print("next_point = " + str(next_point))
+	
+	# get the absolute values of point and next point
+	abs = []
+	for i in range(len(point)):
+		abs.append(math.fabs(point[i]))
+		next_point[i] = math.fabs(next_point[i])
+		
+	print("point = " + str(abs))
+	print("next_point = " + str(next_point))
+	
+	difference = []
+	# add point and next_point together
+	for i in range(len(point)):
+		difference.append((next_point[i] - abs[i]))
+		
+	print("Difference = " + str(difference))
+	
+	# if there are negative values in difference, then next_point is further from the origin than point
+	for i in range(len(difference)):
+		if difference[i] < 0:
+			origin = 1
+	return origin
 
 def get_input(filename):
 	input = open(sys.argv[1], "r")
@@ -670,6 +718,7 @@ def draw_tet():
 	
 	# go through the vertices for the visible faces and project them to the visual plane using pixel coordinates
 	for face in draw:
+		print("Drawing face: " + str(face.getVerteces()))
 		coords = face.get_coordinates()
 		print("I = " + str(face.getIntensity()))
 		
@@ -678,8 +727,12 @@ def draw_tet():
 		
 		color = "#"
 		for i in range(len(col)):
-			intensity = int(col[i] * face.getIntensity())
-			intense_string = "{0:03X}".format(intensity)
+			if face.getIntensity() < 1:
+				intensity = int(col[i] * face.getIntensity())
+				intense_string = "{0:03X}".format(intensity)
+			else :
+				intense_string = str(col[i])
+			
 			print(intense_string)
 			color = color + intense_string
 		print("col = " + str(color))
@@ -817,7 +870,7 @@ if len(sys.argv) > 1:
 	c.bind("<B1-Motion>", mouse_motion)
 	
 	# the viewer is initially located at [-100, 0, 0]
-	vp = [-10,0,0]
+	vp = [-100,0,0]
 	col = [135,972,125]
 	plane = [1,0,0,-1]
 	nplane = [-300,0,0]
