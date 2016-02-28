@@ -160,7 +160,6 @@ class Face:
 		self.vertices = []
 		for i in range(len(vertex_list)):
 			self.vertices.append(vertices[vertex_list[i]-1].copy())
-			print(vertices[vertex_list[i]-1].toString())
 
 		self.orderVertices()
 		self.setCentre()
@@ -215,7 +214,12 @@ class Face:
 			
 			if len(self.vertices) != length:
 				exit("Fucked up and have the wrong number of vertices")
-							
+		
+		# print the vertices
+		v_string = "self.vertices = "
+		for v in self.vertices:
+			v_string = v_string + " " + v.get_name()
+		print(v_string)
 	def setCentre(self):
 		self.centre = []
 		
@@ -242,7 +246,8 @@ class Face:
 		self.light = []
 		
 		for i in range(len(vp)):
-			self.light.append(vp[i]-self.centre[i])
+			self.light.append(vp[i])
+			# -self.centre[i]
 		
 		print("Light vector = " + str(self.light))
 		self.lightdistance = pointDistance(vp, self.centre)
@@ -265,11 +270,6 @@ class Face:
 		self.unitvector = crossProduct(pq, pr)
 		print("vector = " + str(self.unitvector))		
 
-		# now divide the unit vector by the distance from the light source/viewer to the centre
-		for i in range(len(self.unitvector)):
-			self.unitvector[i] = float(self.unitvector[i] / self.lightdistance)
-		print("vector = " + str(self.unitvector))
-
 		if points_at_origin(self.unitvector, first):
 			print("multiplying unit vector by -1")
 			# needs to be pointing away from the tetrahedron and the origin
@@ -278,6 +278,11 @@ class Face:
 				opposite.append((-1 * self.unitvector[i]))
 			
 			self.unitvector = opposite
+
+		# now divide the unit vector by the distance from the light source/viewer to the centre
+		for i in range(len(self.unitvector)):
+			self.unitvector[i] = float(self.unitvector[i] / self.lightdistance)
+		print("vector = " + str(self.unitvector))
 
 		print("vector = " + str(self.unitvector))
 
@@ -359,26 +364,16 @@ def points_at_origin(vector, point):
 	print("point = " + str(point))
 	print("next_point = " + str(next_point))
 	
-	# get the absolute values of point and next point
-	abs = []
-	for i in range(len(point)):
-		abs.append(math.fabs(point[i]))
-		next_point[i] = math.fabs(next_point[i])
-		
-	print("point = " + str(abs))
-	print("next_point = " + str(next_point))
+	# determine distances from origin
+	point_distance = pointDistance(point, [0,0,0])
+	next_point_distance = pointDistance(next_point, [0,0,0])
 	
-	difference = []
-	# add point and next_point together
-	for i in range(len(point)):
-		difference.append((next_point[i] - abs[i]))
-		
-	print("Difference = " + str(difference))
+	print("point distance = " + str(point_distance))
+	print("next_point_distance = " + str(next_point_distance))
 	
-	# if there are negative values in difference, then next_point is further from the origin than point
-	for i in range(len(difference)):
-		if difference[i] < 0:
-			origin = 1
+	if point_distance > next_point_distance:
+		origin = 1
+	
 	return origin
 
 def get_input(filename):
@@ -563,8 +558,6 @@ def get_faces():
 			faces.remove(item)
 
 	print("Faces = " + str(faces) + ", there are " + str(len(faces)) + " of them")
-	for i in range(len(faces)):
-		faces[i] = Face(faces[i])
 
 	print(len(faces))
 
@@ -706,6 +699,11 @@ def draw_tet():
 	c.delete(ALL)
 	draw = []
 	
+	originals = []
+	for i in range(len(faces)):
+		originals.append(faces[i])
+		faces[i] = Face(faces[i])
+	
 	for face in faces:
 		if face.getIntensity() > 0:
 			draw.append(face)
@@ -739,6 +737,8 @@ def draw_tet():
 		
 		c.create_polygon(projected, fill=color, outline='black')
 
+	for i in range(len(originals)):
+		faces[i] = originals[i]
 	# coordinates = []
 	# for each in vertices:
 		# coordinates.append(each.get_coordinates())
@@ -763,6 +763,7 @@ def sort_faces(face_list):
 	out = []
 	
 	# for each iteration of the loop find the most distant and insert to the end of out
+	do_continue = 1
 	while face_list:
 		distant = 0
 		most_distant_item = face_list[0]
@@ -772,7 +773,7 @@ def sort_faces(face_list):
 			if face_list[i].getDistance() > distant:
 				index = i
 				distant = face_list[i].getDistance()
-				most_diatant_item = face_list[i]
+				most_distant_item = face_list[i]
 		
 		out.append(most_distant_item)
 		face_list.pop(index)
@@ -814,8 +815,8 @@ def proj(coords):
 		# print("projection[2] = " + str(projection[1]))
 		
 		array = []
-		array.append((projection[2] * 100) + 640)
-		array.append((projection[1] * 100) + 360)
+		array.append((projection[2] * 200) + 640)
+		array.append((projection[1] * 200) + 360)
 		print("Array = " + str(array))
 		out.append(array)
  
@@ -848,17 +849,28 @@ def translate(x, y, width, height, array):
 	array.append(scale*(x+width))
 	array.append(scale*(y+height))
 	
+# maybe zoom in somehow?
 def wheel(event):
 	print("Wheel activated")
 	
+# ensure that the polyhedron is always in the middle of the display and roughly the same size
 def resize(event):
 	print("Resizing window")
 	
 def click(event):
+	lastX = event.x
+	lastY = event.y
 	print("Click")
 	
 def mouse_motion(event):
-	print("Click and move")
+	dx = prevY - event.y
+	
+	
+	dy = prevX - event.x
+	
+	
+	draw_tet()
+	click(event)
 
 if len(sys.argv) > 1:
 	top = Tk()
@@ -874,6 +886,8 @@ if len(sys.argv) > 1:
 	col = [135,972,125]
 	plane = [1,0,0,-1]
 	nplane = [-300,0,0]
+	prevY = 0
+	prevX = 0
 
 	vertices = [[]]
 	coordinates = [[]]
