@@ -711,8 +711,8 @@ def draw_tet():
 		faces[i] = Face(faces[i])
 	
 	for face in faces:
-		if face.getIntensity() > -0.1:
-			draw.append(face)
+		# if face.getIntensity() > -0.1:
+		draw.append(face)
 	
 	# sort started with the most distant face
 	print("Drawing " + str(len(draw)) + " faces")
@@ -731,8 +731,11 @@ def draw_tet():
 		
 		color = "#"
 		for i in range(len(col)):
-			if face.getIntensity() < 1:
+			if (face.getIntensity() < 1) and (face.getIntensity() > 0) :
 				intensity = int(col[i] * face.getIntensity())
+				intense_string = "{0:03X}".format(intensity)
+			elif face.getIntensity() < 0:
+				intensity = int(col[i] * 0.1)
 				intense_string = "{0:03X}".format(intensity)
 			else :
 				intense_string = str(col[i])
