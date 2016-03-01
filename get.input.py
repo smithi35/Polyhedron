@@ -827,16 +827,16 @@ def proj(coords):
 		# get pixel coordinates by shifting up and to the right, and multiply by a scalar to increase the size of the shape
 		
 		# print("projection[1] = " + str(projection[0]))
-		# print("projection[2] = " + str(projection[1]))
+		# print("projection[2] = " + str(projection[1]))	
 		
 		if scale > 0 :
 			array = []
-			array.append((projection[2] * scale * 200) + 640)
-			array.append((projection[1] * 200 * scale) + 360)
+			array.append((projection[2] * scale * 200) + (width / 2))
+			array.append((projection[1] * 200 * scale) + (height / 2))
 		else :
 			array = []
-			array.append((projection[2] * 200) + 640)
-			array.append((projection[1] * 200) + 360)
+			array.append((projection[2] * 200) + (width / 2))
+			array.append((projection[1] * 200) + (height / 2))
 		print("Array = " + str(array))
 		out.append(array)
  
@@ -900,7 +900,10 @@ def wheel(event):
 	
 # increase or decrease the size of the tetrahedron
 def resize(event):
-	print()
+	global height, width
+	height = event.height
+	width = event.width
+	draw_tet()
 	
 def click(event):
 	prevX = event.x
@@ -931,9 +934,11 @@ def mouse_motion(event):
 	click(event)
 
 if len(sys.argv) > 1:
+	height = 720
+	width = 1280
 	scale = 1
 	top = Tk()
-	c = Canvas(top, bg="white", height=720, width=1280)
+	c = Canvas(top, bg="white", height=height, width=width)
 	c.pack(fill=BOTH, expand=YES)
 	c.bind_all('<MouseWheel>', wheel)
 	c.bind("<Configure>", resize)
