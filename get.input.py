@@ -32,6 +32,12 @@ class Vertex:
 	def insert_coordinates(self, coordinate):
 		self.coordinates.append(coordinate)
 	
+	def set_coordinates(self, coordinates):
+		self.coordinates = []
+		
+		for c in coordinates:
+			self.coordinates.append(c)
+	
 	def get_connections(self):
 		copy = []
 		for item in self.connections:
@@ -823,65 +829,109 @@ def proj(coords):
 		# print("projection[1] = " + str(projection[0]))
 		# print("projection[2] = " + str(projection[1]))
 		
-		array = []
-		array.append((projection[2] * 200) + 640)
-		array.append((projection[1] * 200) + 360)
+		if scale > 0 :
+			array = []
+			array.append((projection[2] * scale * 200) + 640)
+			array.append((projection[1] * 200 * scale) + 360)
+		else :
+			array = []
+			array.append((projection[2] * 200) + 640)
+			array.append((projection[1] * 200) + 360)
 		print("Array = " + str(array))
 		out.append(array)
  
 	return out
 
-def convert_to_four_dimensions(coordinates):
-	m = len(coordinates[0])+1
-	n = len(coordinates)
+# go through the vertices and change them according to the rotaion matrix
+def rotateTetrahedron(rotation_matrix):
+	for vertex in vertices:
+		# set vertex coordinates as matrix
+		coords = vertex.get_coordinates()
+		vertex_matrix = []
+		
+		for c in coords:
+			vertex_matrix.append([c])
+		
+		vertex_matrix = matMul(rotation_matrix, vertex_matrix)
+
+		if vertex_matrix:
+			replacement = []
+		
+			# take matrix and replace coordinates with it as an array
+			for array in vertex_matrix:
+				for item in array:
+					replacement.append(item)
+				
+			vertex.set_coordinates(replacement)
+		
+
+# returns the product of two matrices
+def matMul(first, second):
+	out = None
+	# not all matrices can be multiplied
+	if len(first[0]) == len(second):
+		m = len(first)
+		n = len(second[0])
+		common = len(second)
+		
+		out = createZeroMat(m, n)
+		
+		for i in range(m):
+			for j in range(n):
+				for k in range(common):
+					out[i][j] += first[i][k] * second[k][j]
 	
-	out = create_Zero_Matrix(m, n)
-
-	for i in range(m-1):
-		for j in range(n):
-			out[i][j] = coordinates[j][i]
-	out[m-1] = [1] * n
-
 	return out
 
-def create_Zero_Matrix(m, n):
+# returns an empty matrix of size m*x	
+def createZeroMat(m, n):
 	out = [0] * m
-
+	
 	for i in range(m):
 		out[i] = [0] * n
-
+		
 	return out
 
-# doesn't account for z axis at all yet
-def translate(x, y, width, height, array):
-	scale = 150
-	array.append(scale*(x+width))
-	array.append(scale*(y+height))
-	
-# maybe zoom in somehow?
+# make it look bigger or smaller by increasing or decreasing scale
 def wheel(event):
-	print("Wheel activated")
+	global scale
+	scale = scale + (event.delta/120)
+	draw_tet()
 	
-# ensure that the polyhedron is always in the middle of the display and roughly the same size
+# increase or decrease the size of the tetrahedron
 def resize(event):
-	print("Resizing window")
+	print()
 	
 def click(event):
-	lastX = event.x
-	lastY = event.y
-	print("Click")
+	prevX = event.x
+	prevY = event.y
 	
 def mouse_motion(event):
+	# x motion on the screen is y-rotation for the tetrahedron
+	
 	dx = prevY - event.y
+	theta = math.radians(dx)
+	costheta = math.cos(theta)
+	sintheta = math.sin(theta)
+	x_rotation = [[1,0,0], [0,costheta,(-1 * sintheta)], [0,sintheta,costheta]]
+	# y_rotation = [[costheta,0,(-1 * sintheta)], [0,1,0], [sintheta,0,costheta]]
 	
+	rotateTetrahedron(x_rotation)
 	
+	# y motion on the screen is z-rotation for the tetrahedron
 	dy = prevX - event.x
-	
+	theta = math.radians(dy)
+	costheta = math.cos(theta)
+	sintheta = math.sin(theta)
+	z_rotation = [[costheta,(-1 * sintheta),0], [sintheta,costheta,0], [0,0,1]]
+
+	rotateTetrahedron(z_rotation)
 	
 	draw_tet()
 	click(event)
 
 if len(sys.argv) > 1:
+	scale = 1
 	top = Tk()
 	c = Canvas(top, bg="white", height=720, width=1280)
 	c.pack(fill=BOTH, expand=YES)
